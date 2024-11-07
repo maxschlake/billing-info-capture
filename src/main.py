@@ -4,7 +4,7 @@ from PIL import Image
 import pytesseract
 import os
 
-imageRawFileName = "book"
+imageRawFileName = "questions"
 imageRawFileType = "jpg"
 imageRawFile = imageRawFileName + "." + imageRawFileType
 imageRawDir = "images/raw"
@@ -24,8 +24,8 @@ img = cv2.imread(imageRawFilePath)
 
 # 1) Invert
 mod = "_invert"
-invertedImage = cv2.bitwise_not(img)
-outputImage = invertedImage
+# invertedImage = cv2.bitwise_not(img)
+# outputImage = invertedImage
 
 # 2) Rescale
 mod = "_rescale"
@@ -34,13 +34,37 @@ mod = "_rescale"
 # 3) Binarize
 mod = "_binarize"
 
-# Turn first into gray scale image as it facilitates binarization
+# Turn image into gray scale image as it facilitates binarization
 grayImage = process.grayScale(img)
 thresh = 127.0
 maxVal = 255
 thresh, bwImage = cv2.threshold(grayImage, thresh=thresh, maxval=maxVal, type=cv2.THRESH_BINARY)
 outputImage = bwImage
 
+# 4) Remove noise
+mod = "_denoise"
+denoisedImage = process.removeNoise(bwImage, kernelSizeDil=1, iterationsDil=1, kernelSizeEr=1, iterationsEr=1, kernelSizeMorph=1, kernelSizeBlur=1)
+outputImage = denoisedImage
+
+# 5) Adjust font sizes with erosion and dilation
+mod = "_fontChange"
+# fontChangeImage = process.changeFontSize(img, changeType="dilate", kernelSize=2, iterations=1)
+# outputImage = fontChangeImage
+
+# 6) Deskew
+mod = "_deskew"
+# deskewedImage = process.deskew(img)
+# outputImage = deskewedImage
+
+# 7) Remove borders
+mod = "_withoutBorders"
+# withoutBordersImage = process.removeBorders(denoisedImage)
+# outputImage = withoutBordersImage
+
+# 8) Add borders
+mod = "_withBorders"
+withBordersImage = process.addBorders(denoisedImage, borderWidth=150, maxVal=255)
+outputImage = withBordersImage
 
 # Save output file
 imageModFilePath = os.path.join(imageModDir, imageRawFileName + mod + "." + imageRawFileType)
