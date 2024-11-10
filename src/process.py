@@ -2,6 +2,7 @@ import os
 import cv2
 from matplotlib import pyplot as plt
 import numpy as np
+from PIL import Image
 
 
 # Function to create a new directory if it does not yet exist
@@ -13,6 +14,13 @@ def createDirectory(dir, verbose: bool=False):
     else:
         if verbose:
             print(f"Directory {dir} already exists.")
+
+# Funcion to resize an image
+def resize(image, scale : float = 1.0):
+    width = int(image.shape[1] * scale)
+    height = int(image.shape[0] * scale)
+    image = cv2.resize(image, (width, height))
+    return image
 
 # Function to display the entire image
 def display(imagePath):
@@ -69,38 +77,68 @@ def changeFontSize(image, changeType: str, kernelSize: int, iterations: int):
     return image
 
 # Function to get the skew angle of an image
-# Source: Leo Ertuna (https://becominghuman.ai/how-to-automatically-deskew-straighten-a-text-image-using-opencv-a0c30aed83df)
-def getSkewAngle(image, verbose: bool=False):
+# Corrected version of the original by: Leo Ertuna (https://becominghuman.ai/how-to-automatically-deskew-straighten-a-text-image-using-opencv-a0c30aed83df)
+# see changes in the cv2.minAreaRect() function since version 4.5.1: https://github.com/opencv/opencv/issues/19472
+def getSkewAngle(image, verbose: bool=False) -> float:
 
     newImage = image.copy()
+    newImage = resize(newImage, 1.0)
+    # cv2.imshow("newImage", newImage)
+    # cv2.waitKey(0)
     # Prepare image, convert to gray scale, blur, and threshold
-    gray = cv2.cvtColor(src=newImage, code=cv2.COLOR_BGR2GRAY)
-    blur = cv2.GaussianBlur(src=gray, ksize=(9, 9), sigmaX=0)
-    _, thresh = cv2.threshold(src=blur, thresh=0, maxval=255, type=cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    if len(newImage.shape) == 3:
+        gray = cv2.cvtColor(src=newImage, code=cv2.COLOR_BGR2GRAY)
+    else:
+        gray = newImage
+    blur = cv2.GaussianBlur(src=gray, ksize=(1, 1), sigmaX=0)
+    # cv2.imshow("blur", blur)
+    # cv2.waitKey(0)
+    thresh = cv2.threshold(src=blur, thresh=0, maxval=255, type=cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)[1]
+    # cv2.imshow("thresh", thresh)
+    # cv2.waitKey(0)
 
     # Apply dilate to merge text into meaningful lines/paragraphs
     # Use larger kernel on x axis to merge characters into single line, cancelling out any spaces
     # Use smaller kernel on y axis to separate between different blocks of text
     kernel = cv2.getStructuringElement(shape=cv2.MORPH_RECT, ksize=(30, 5))
-    dilate = cv2.dilate(src=thresh, kernel=kernel, iterations=2)
+    dilate = cv2.dilate(src=thresh, kernel=kernel, iterations=1)
+    # cv2.imshow("dilate", dilate)
+    # cv2.waitKey(0)
 
     # Find all contours
     contours, hierarchy = cv2.findContours(image=dilate, mode=cv2.RETR_LIST, method=cv2.CHAIN_APPROX_SIMPLE)
     contours = sorted(contours, key=cv2.contourArea, reverse=True)
-    for c in contours:
-        rect = cv2.boundingRect(c)
-        x, y, w, h = rect
-        cv2.rectangle(img=image, pt1=(x, y), pt2=(x + w, y + h), color=(0, 255, 0), thickness=2)
+    test = cv2.drawContours(image=dilate, contours=contours, contourIdx=-1, color=(0, 255, 0))
+    # cv2.imshow("test", test)  # Display the image with the contour
+    # cv2.waitKey(0)  # Wait for a key press to close the window
+    # for c in contours:
+    #     rect = cv2.boundingRect(c)
+    #     x, y, w, h = rect
+    #     cv2.rectangle(img=newImage, pt1=(x, y), pt2=(x + w, y + h), color=(0, 255, 0), thickness=2)
     
     # Find largest contour and surround in min area box
     largestContour = contours[0]
+    # cv2.imshow("Largest Contour", resizedImage)  # Display the image with the contour
+    # cv2.waitKey(0)  # Wait for a key press to close the window
+    # cv2.destroyAllWindows()
+    # im = Image.open(test)
+    # im.show()
     if verbose == True:
         print(f"Number of contours: {len(contours)}")
     minAreaRect = cv2.minAreaRect(largestContour)
+    box = cv2.boxPoints(minAreaRect)  # Get the four corners of the rectangle
+    box = np.int0(box)  # Convert to integer coordinates
+    # cv2.drawContours(newImage, [box], 0, (255, 0, 0), 2)  # Draw the rectangle on the image
+    # cv2.imshow("box", newImage)
+    # cv2.waitKey(0)
     angle = minAreaRect[-1]
-    if angle < -45:
-        angle = 90 + angle
-    return -1.0 * angle
+    print(f"angle: {angle}")
+    # if height > width, the (distorted) rotation is likely clockwise
+    if minAreaRect[1][1] > minAreaRect[1][0]: 
+        return -angle
+    # if width > height, the (distorted) rotation is likely counterclockwise
+    else:
+        return 90.0 - angle
 
 # Function to rotate an image
 # Source: Leo Ertuna (https://becominghuman.ai/how-to-automatically-deskew-straighten-a-text-image-using-opencv-a0c30aed83df)
@@ -115,7 +153,7 @@ def rotate(image, angle: float):
 # Source: Leo Ertuna (https://becominghuman.ai/how-to-automatically-deskew-straighten-a-text-image-using-opencv-a0c30aed83df)
 def deskew(image, verbose: bool=False):
     angle = getSkewAngle(image, verbose)
-    return rotate(image, angle=angle)
+    return rotate(image, angle=-angle)
 
 # Function to remove borders
 def removeBorders(image):
