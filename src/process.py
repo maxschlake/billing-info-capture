@@ -15,11 +15,17 @@ def createDirectory(dir, verbose: bool=False):
         if verbose:
             print(f"Directory {dir} already exists.")
 
-# Funcion to resize an image
-def resize(image, scale : float = 1.0):
-    width = int(image.shape[1] * scale)
-    height = int(image.shape[0] * scale)
-    image = cv2.resize(image, (width, height))
+# Funcion to resize an image to targetWidth and targetHeight while preserving the aspect ratio
+def resize(image, targetWidth : int, targetHeight : int):
+    imageHeight, imageWidth = image.shape[:2]
+    aspectRatio = imageWidth / imageHeight
+
+    if imageWidth >= imageHeight:
+        targetHeight = int(targetWidth / aspectRatio)
+    else: 
+        targetWidth = int(targetHeight * aspectRatio)
+
+    image = cv2.resize(image, (targetWidth, targetHeight))
     return image
 
 # Function to display the entire image
@@ -82,14 +88,12 @@ def changeFontSize(image, changeType: str, kernelSize: int, iterations: int):
 def getSkewAngle(image, verbose: bool=False) -> float:
 
     newImage = image.copy()
-    newImage = resize(newImage, 1.0)
-    # cv2.imshow("newImage", newImage)
-    # cv2.waitKey(0)
+
     # Prepare image, convert to gray scale, blur, and threshold
     if len(newImage.shape) == 3:
         gray = cv2.cvtColor(src=newImage, code=cv2.COLOR_BGR2GRAY)
     else:
-        gray = newImage
+        gray = image
     blur = cv2.GaussianBlur(src=gray, ksize=(1, 1), sigmaX=0)
     # cv2.imshow("blur", blur)
     # cv2.waitKey(0)
@@ -108,33 +112,37 @@ def getSkewAngle(image, verbose: bool=False) -> float:
     # Find all contours
     contours, hierarchy = cv2.findContours(image=dilate, mode=cv2.RETR_LIST, method=cv2.CHAIN_APPROX_SIMPLE)
     contours = sorted(contours, key=cv2.contourArea, reverse=True)
-    test = cv2.drawContours(image=dilate, contours=contours, contourIdx=-1, color=(0, 255, 0))
-    # cv2.imshow("test", test)  # Display the image with the contour
+    # newImage = cv2.drawContours(image=newImage, contours=contours[-1], contourIdx=-1, color=(0, 255, 0))
+    # cv2.imshow("test", newImage)  # Display the image with the contour
     # cv2.waitKey(0)  # Wait for a key press to close the window
     # for c in contours:
     #     rect = cv2.boundingRect(c)
     #     x, y, w, h = rect
     #     cv2.rectangle(img=newImage, pt1=(x, y), pt2=(x + w, y + h), color=(0, 255, 0), thickness=2)
+
+    # Check if we have any contours at all
+    if len(contours) == 0:
+        print("No contours found.")
+        return 0
     
     # Find largest contour and surround in min area box
     largestContour = contours[0]
-    # cv2.imshow("Largest Contour", resizedImage)  # Display the image with the contour
-    # cv2.waitKey(0)  # Wait for a key press to close the window
-    # cv2.destroyAllWindows()
-    # im = Image.open(test)
-    # im.show()
+    newImage = cv2.drawContours(newImage, [largestContour], -1, (255, 0, 0), 2) 
+    cv2.imshow("Largest Contour", newImage)  # Display the image with the contour
+    cv2.waitKey(0)  # Wait for a key press to close the window
     if verbose == True:
         print(f"Number of contours: {len(contours)}")
     minAreaRect = cv2.minAreaRect(largestContour)
     box = cv2.boxPoints(minAreaRect)  # Get the four corners of the rectangle
     box = np.int0(box)  # Convert to integer coordinates
-    # cv2.drawContours(newImage, [box], 0, (255, 0, 0), 2)  # Draw the rectangle on the image
-    # cv2.imshow("box", newImage)
-    # cv2.waitKey(0)
+    cv2.drawContours(newImage, [box], 0, (0, 0, 255), 2)  # Draw the rectangle on the image
+    cv2.imshow("box", newImage)
+    cv2.waitKey(0)
     angle = minAreaRect[-1]
     print(f"angle: {angle}")
+    print(minAreaRect[1][0], minAreaRect[1][1])
     # if height > width, the (distorted) rotation is likely clockwise
-    if minAreaRect[1][1] > minAreaRect[1][0]: 
+    if angle < 45: 
         return -angle
     # if width > height, the (distorted) rotation is likely counterclockwise
     else:
