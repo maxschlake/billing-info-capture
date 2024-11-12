@@ -136,11 +136,9 @@ def getSkewAngle(image, verbose: bool=False) -> float:
     box = cv2.boxPoints(minAreaRect)  # Get the four corners of the rectangle
     box = np.int0(box)  # Convert to integer coordinates
     cv2.drawContours(newImage, [box], 0, (0, 0, 255), 2)  # Draw the rectangle on the image
-    cv2.imshow("box", newImage)
-    cv2.waitKey(0)
+    # cv2.imshow("box", newImage)
+    # cv2.waitKey(0)
     angle = minAreaRect[-1]
-    print(f"angle: {angle}")
-    print(minAreaRect[1][0], minAreaRect[1][1])
     # if height > width, the (distorted) rotation is likely clockwise
     if angle < 45: 
         return -angle
@@ -178,3 +176,28 @@ def addBorders(image, borderWidth : int, maxVal : int=255):
     top, bottom, left, right = [borderWidth] * 4
     image = cv2.copyMakeBorder(src=image, top=top, bottom=bottom, left=left, right=right, borderType=cv2.BORDER_CONSTANT, value=color)
     return image
+
+
+def identifyStructure(image, imageDeskewed, kernelSizeBlur : int, stddevBlur : float):
+    roiList = []
+    if len(imageDeskewed.shape) == 3:
+        gray = cv2.cvtColor(src=imageDeskewed, code=cv2.COLOR_BGR2GRAY)
+    else:
+        gray = imageDeskewed
+    blur = cv2.GaussianBlur(src=gray, ksize=(kernelSizeBlur, kernelSizeBlur), sigmaX=stddevBlur)
+    thresh = cv2.threshold(src=blur, thresh=0, maxval=255, type=cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)[1]
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (55, 40))
+    dilate = cv2.dilate(src=thresh, kernel=kernel, iterations=1)
+    contours = cv2.findContours(image=dilate, mode=cv2.RETR_EXTERNAL, method=cv2.CHAIN_APPROX_SIMPLE)
+    contours = contours[0] if len(contours) == 2 else contours[1]
+    contours = sorted(contours, key=lambda x: (cv2.boundingRect(x)[1], cv2.boundingRect(x)[0]))
+    for c in contours:
+        x, y, w, h = cv2.boundingRect(c)
+        if h > 10 and w > 10:
+            roi = image[y:y+h, x:x+w]
+            roiList.append(roi)
+            cv2.rectangle(image, (x, y), (x + w, y + h), (36, 255, 12), 2)
+    
+    cv2.imshow("here", image)
+    cv2.waitKey(0)
+    return roiList
