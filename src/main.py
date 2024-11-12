@@ -1,5 +1,6 @@
 import cv2
-import process
+import processImage
+import processText
 from PIL import Image
 import pytesseract
 import os
@@ -8,15 +9,16 @@ import pandas as pd
 import spacy
 import json
 
+
 # 0) Setup
 # 0.1) Select the image to be processed and create additional directories
-imageRawFileName = "facture1"
+imageRawFileName = "facture2"
 imageRawFileType = "jpg"
 imageRawFile = imageRawFileName + "." + imageRawFileType
 imageRawDir = "images/raw"
 imageRawFilePath = os.path.join(imageRawDir, imageRawFile)
 imageModDir = os.path.join(os.path.dirname(imageRawDir), "mod")
-process.createDirectory(imageModDir)
+processImage.createDirectory(imageModDir)
 
 # 0.2) Load the image
 img = cv2.imread(imageRawFilePath)
@@ -31,22 +33,23 @@ if resize:
     tk.destroy()
     targetWidth = int(screenWidth * screenPerc)
     targetHeight = int(screenHeight * screenPerc)
-    img = process.resize(img, targetWidth=targetWidth, targetHeight=targetHeight)
+    img = processImage.resize(img, targetWidth=targetWidth, targetHeight=targetHeight)
 
-# 1) Start automatic image processing
+# 1) Process the image
 
 # 1.1) Deskew
-mod = "_deskew"
-img_deskwed = process.deskew(img)
+img_deskwed = processImage.deskew(img)
 
-# 1.1) Binarize
-mod = "_binarize"
-img = process.grayScale(img_deskwed) # gray scale facilitates binarization
+# 1.2) Binarize
+img = processImage.grayScale(img_deskwed) # gray scale facilitates binarization
 
-mod = "_invert"
+# 1.3) Invert
 img = cv2.bitwise_not(img)
 
-# img = process.changeFontSize(img, changeType="dilate", kernelSize=1, iterations=1)
+# 1.4) Change font size
+img = processImage.changeFontSize(img, changeType="dilate", kernelSize=2, iterations=1)
+mod = "_mod"
+
 # cv2.imshow("2", img)
 # cv2.waitKey(0)
 
@@ -85,7 +88,7 @@ img = cv2.bitwise_not(img)
 # mod = "_withoutBorders"
 # img = process.removeBorders(img)
 
-# 3) Save output file
+# 1.5) Save output image
 imageModFilePath = os.path.join(imageModDir, imageRawFileName + mod + "." + imageRawFileType)
 cv2.imwrite(imageModFilePath, img)
 
@@ -94,36 +97,50 @@ cv2.imwrite(imageModFilePath, img)
 # cv2.imshow("modified image", imgMod)
 # cv2.waitKey(0)
 
-# Apply OCR
+# 2) Apply OCR
 
-ocr_result1 = pytesseract.image_to_string(imageRawFilePath)
-ocr_result2 = pytesseract.image_to_string(imageModFilePath)
-
+# 2.1) Obtain ROIs from the modified image
 img_mod = cv2.imread(imageModFilePath)
-roiList = process.identifyStructure(img_mod, img_deskwed, kernelSizeBlur=1, stddevBlur=0)
-ocr_results = []
-for roi in roiList:
-    config = "--oem 1 --psm 4"
-    text = pytesseract.image_to_string(roi, config=config).strip()
-    if text:
-        for line in text.split("\n"):
-            if line:
-                ocr_results.append(line)
-ocr_result3 = "\n".join(ocr_results)
-print(ocr_result3)
+roiList = processImage.identifyStructure(img_mod, img_deskwed, kernelSizeBlur=1, stddevBlur=0)
 
+# 2.2) Build OCR list and dictionary
+ocrResultsList = []
+ocrResultsDict = {}
+roiNum = 0
+ocrConfig = "--oem 1 --psm 4"
+for roi in roiList:
+    if roi.any():
+        text = pytesseract.image_to_string(roi, config=ocrConfig).strip()
+        if text:
+            lineNum = 0
+            ocrResultsDict[roiNum] = {}
+            for line in text.split("\n"):
+                if line:
+                    line = processText.standardize(line)
+                    ocrResultsList.append(line)
+                    ocrResultsDict[roiNum][lineNum] = line.lower()
+                    lineNum += 1
+            roiNum += 1
+ocr = "\n".join(ocrResultsList)
+print(ocr)
+print(ocrResultsDict)
+
+# 3) Apply NER with the selected model
 model_sm = "fr_core_news_sm"
 model_md = "fr_core_news_md"
 model_lg = "fr_core_news_lg"
 model_trf = "fr_dep_news_trf"
+ner = spacy.load(model_lg)
+nerDoc = ner(ocr)
 
-ner = spacy.load(model_trf)
+# 4) Create the final JSON file from the extracted invoice data
 
-doc = ner(ocr_result3)
+# 4.1) Build the invoice data dictionary from OCR and NER results
+invoiceData = processText.extractData(ocrOutput=ocrResultsDict, nerOutput=nerDoc)
 
-for ent in doc.ents:
+for ent in nerDoc.ents:
     print(ent.text, ent.label_)
 
-# entities = []
-# for ent in entities:
-#     entities[ent.label_] = ent.text
+print(invoiceData)
+
+# 4.2) Create JSON file from the invoice data dictionary
