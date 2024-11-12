@@ -4,6 +4,9 @@ from PIL import Image
 import pytesseract
 import os
 import tkinter
+import pandas as pd
+import spacy
+import json
 
 # 0) Setup
 # 0.1) Select the image to be processed and create additional directories
@@ -108,3 +111,19 @@ for roi in roiList:
                 ocr_results.append(line)
 ocr_result3 = "\n".join(ocr_results)
 print(ocr_result3)
+
+model_sm = "fr_core_news_sm"
+model_md = "fr_core_news_md"
+model_lg = "fr_core_news_lg"
+model_trf = "fr_dep_news_trf"
+
+ner = spacy.load(model_trf)
+
+doc = ner(ocr_result3)
+
+for ent in doc.ents:
+    print(ent.text, ent.label_)
+
+# entities = []
+# for ent in entities:
+#     entities[ent.label_] = ent.text

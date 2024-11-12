@@ -128,8 +128,8 @@ def getSkewAngle(image, verbose: bool=False) -> float:
     # Find largest contour and surround in min area box
     largestContour = contours[0]
     newImage = cv2.drawContours(newImage, [largestContour], -1, (255, 0, 0), 2) 
-    cv2.imshow("Largest Contour", newImage)  # Display the image with the contour
-    cv2.waitKey(0)  # Wait for a key press to close the window
+    # cv2.imshow("Largest Contour", newImage)  # Display the image with the contour
+    # cv2.waitKey(0)  # Wait for a key press to close the window
     if verbose == True:
         print(f"Number of contours: {len(contours)}")
     minAreaRect = cv2.minAreaRect(largestContour)
@@ -177,7 +177,7 @@ def addBorders(image, borderWidth : int, maxVal : int=255):
     image = cv2.copyMakeBorder(src=image, top=top, bottom=bottom, left=left, right=right, borderType=cv2.BORDER_CONSTANT, value=color)
     return image
 
-
+# Function to identify regiions of interest (roi) in an image and create a sorted list thereof
 def identifyStructure(image, imageDeskewed, kernelSizeBlur : int, stddevBlur : float):
     roiList = []
     if len(imageDeskewed.shape) == 3:
@@ -197,7 +197,4 @@ def identifyStructure(image, imageDeskewed, kernelSizeBlur : int, stddevBlur : f
             roi = image[y:y+h, x:x+w]
             roiList.append(roi)
             cv2.rectangle(image, (x, y), (x + w, y + h), (36, 255, 12), 2)
-    
-    cv2.imshow("here", image)
-    cv2.waitKey(0)
     return roiList
