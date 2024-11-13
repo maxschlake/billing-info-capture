@@ -16,15 +16,11 @@ def createDirectory(dir, verbose: bool=False):
             print(f"Directory {dir} already exists.")
 
 # Funcion to resize an image to targetWidth and targetHeight while preserving the aspect ratio
-def resize(image, targetWidth : int, targetHeight : int):
-    imageHeight, imageWidth = image.shape[:2]
-    aspectRatio = imageWidth / imageHeight
-
-    if imageWidth >= imageHeight:
+def resize(image, targetWidth : int, targetHeight : int, aspectRatio : float, landscape : bool=False):
+    if landscape:
         targetHeight = int(targetWidth / aspectRatio)
     else: 
         targetWidth = int(targetHeight * aspectRatio)
-
     image = cv2.resize(image, (targetWidth, targetHeight))
     return image
 
@@ -112,13 +108,13 @@ def getSkewAngle(image, verbose: bool=False) -> float:
     # Find all contours
     contours, hierarchy = cv2.findContours(image=dilate, mode=cv2.RETR_LIST, method=cv2.CHAIN_APPROX_SIMPLE)
     contours = sorted(contours, key=cv2.contourArea, reverse=True)
-    # newImage = cv2.drawContours(image=newImage, contours=contours[-1], contourIdx=-1, color=(0, 255, 0))
-    # cv2.imshow("test", newImage)  # Display the image with the contour
-    # cv2.waitKey(0)  # Wait for a key press to close the window
+    newImage = cv2.drawContours(image=newImage, contours=contours[-1], contourIdx=-1, color=(0, 255, 0))
     # for c in contours:
     #     rect = cv2.boundingRect(c)
     #     x, y, w, h = rect
     #     cv2.rectangle(img=newImage, pt1=(x, y), pt2=(x + w, y + h), color=(0, 255, 0), thickness=2)
+    # cv2.imshow("test", newImage)  # Display the image with the contour
+    # cv2.waitKey(0)  # Wait for a key press to close the window
 
     # Check if we have any contours at all
     if len(contours) == 0:
@@ -135,7 +131,7 @@ def getSkewAngle(image, verbose: bool=False) -> float:
     minAreaRect = cv2.minAreaRect(largestContour)
     box = cv2.boxPoints(minAreaRect)  # Get the four corners of the rectangle
     box = np.int0(box)  # Convert to integer coordinates
-    cv2.drawContours(newImage, [box], 0, (0, 0, 255), 2)  # Draw the rectangle on the image
+    # cv2.drawContours(newImage, [box], 0, (0, 0, 255), 2)  # Draw the rectangle on the image
     # cv2.imshow("box", newImage)
     # cv2.waitKey(0)
     angle = minAreaRect[-1]
@@ -178,7 +174,7 @@ def addBorders(image, borderWidth : int, maxVal : int=255):
     return image
 
 # Function to identify regiions of interest (roi) in an image and create a sorted list thereof
-def identifyStructure(image, imageDeskewed, kernelSizeBlur : int, stddevBlur : float):
+def identifyStructure(image, imageDeskewed, kernelSizeBlur : int, stddevBlur : float, landscape : bool=False):
     roiList = []
     if len(imageDeskewed.shape) == 3:
         gray = cv2.cvtColor(src=imageDeskewed, code=cv2.COLOR_BGR2GRAY)
@@ -186,14 +182,17 @@ def identifyStructure(image, imageDeskewed, kernelSizeBlur : int, stddevBlur : f
         gray = imageDeskewed
     blur = cv2.GaussianBlur(src=gray, ksize=(kernelSizeBlur, kernelSizeBlur), sigmaX=stddevBlur)
     thresh = cv2.threshold(src=blur, thresh=0, maxval=255, type=cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)[1]
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (55, 40))
+    if landscape:
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (75, 30))
+    else:
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (55, 40))
     dilate = cv2.dilate(src=thresh, kernel=kernel, iterations=1)
     contours = cv2.findContours(image=dilate, mode=cv2.RETR_EXTERNAL, method=cv2.CHAIN_APPROX_SIMPLE)
     contours = contours[0] if len(contours) == 2 else contours[1]
     contours = sorted(contours, key=lambda x: (cv2.boundingRect(x)[1], cv2.boundingRect(x)[0]))
     for c in contours:
         x, y, w, h = cv2.boundingRect(c)
-        if h > 10 and w > 10:
+        if h > 5 and w > 5: # 10/10
             roi = image[y:y+h, x:x+w]
             roiList.append(roi)
             cv2.rectangle(image, (x, y), (x + w, y + h), (36, 255, 12), 2)

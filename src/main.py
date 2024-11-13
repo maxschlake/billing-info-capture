@@ -8,6 +8,7 @@ import tkinter
 import pandas as pd
 import spacy
 import json
+import numpy as np
 
 
 # 0) Setup
@@ -23,7 +24,16 @@ processImage.createDirectory(imageModDir)
 # 0.2) Load the image
 img = cv2.imread(imageRawFilePath)
 
-# 0.3) Get the screen dimensions and adjust the image size if requested
+# 0.3 Compute aspect ratio and detect landscape format
+imageWidth = img.shape[1]
+imageHeight = img.shape[0]
+aspectRatio = imageWidth / imageHeight
+if imageWidth >= imageHeight:
+    landscape = True
+else:
+    landscape = False
+
+# 0.4) Get the screen dimensions and adjust the image size if requested
 resize = False
 screenPerc = 1.0
 if resize:
@@ -33,7 +43,8 @@ if resize:
     tk.destroy()
     targetWidth = int(screenWidth * screenPerc)
     targetHeight = int(screenHeight * screenPerc)
-    img = processImage.resize(img, targetWidth=targetWidth, targetHeight=targetHeight)
+    img = processImage.resize(img, targetWidth=targetWidth, targetHeight=targetHeight,
+                              aspectRatio=aspectRatio, landscape=landscape)
 
 # 1) Process the image
 
@@ -101,20 +112,28 @@ cv2.imwrite(imageModFilePath, img)
 
 # 2.1) Obtain ROIs from the modified image
 img_mod = cv2.imread(imageModFilePath)
-roiList = processImage.identifyStructure(img_mod, img_deskwed, kernelSizeBlur=1, stddevBlur=0)
+roiList = processImage.identifyStructure(img_mod, img_deskwed, kernelSizeBlur=1, stddevBlur=0, landscape=landscape)
 
 # 2.2) Build OCR list and dictionary
+ocrConfig = "--oem 1 --psm 4"
 ocrResultsList = []
 ocrResultsDict = {}
 roiNum = 0
-ocrConfig = "--oem 1 --psm 4"
+maxAvCharHeight = 0
+roiNumMaxAvCharHeight = None
 for roi in roiList:
     if roi.any():
-        text = pytesseract.image_to_string(roi, config=ocrConfig).strip()
-        if text:
+        string = pytesseract.image_to_string(roi, config=ocrConfig).strip()
+        data = pytesseract.image_to_data(roi, config=ocrConfig, output_type=pytesseract.Output.DICT)
+        if string:
+            charHeightList = [data["height"][i] for i, txt in enumerate(data["text"]) if txt.strip()]
+            avCharHeight = sum(charHeightList) / len(charHeightList)
+            if avCharHeight > maxAvCharHeight:
+                maxAvCharHeight = avCharHeight
+                roiNumMaxAvCharHeight = roiNum
             lineNum = 0
             ocrResultsDict[roiNum] = {}
-            for line in text.split("\n"):
+            for line in string.split("\n"):
                 if line:
                     line = processText.standardize(line)
                     ocrResultsList.append(line)
@@ -124,6 +143,7 @@ for roi in roiList:
 ocr = "\n".join(ocrResultsList)
 print(ocr)
 print(ocrResultsDict)
+print(roiNumMaxAvCharHeight)
 
 # 3) Apply NER with the selected model
 model_sm = "fr_core_news_sm"
@@ -136,7 +156,7 @@ nerDoc = ner(ocr)
 # 4) Create the final JSON file from the extracted invoice data
 
 # 4.1) Build the invoice data dictionary from OCR and NER results
-invoiceData = processText.extractData(ocrOutput=ocrResultsDict, nerOutput=nerDoc)
+invoiceData = processText.extractData(ocrOutput=ocrResultsDict, nerOutput=nerDoc, roiNumSupplier=roiNumMaxAvCharHeight)
 
 for ent in nerDoc.ents:
     print(ent.text, ent.label_)

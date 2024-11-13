@@ -41,24 +41,27 @@ def standardize(text):
     return text
 
 # Context lists
-contextInvoiceNumber = ["facture", "facturation"]
+contextInvoiceNumber = ["facture", "facturation", "numéro de facture", "numero de facture"]
 contextSupplierName = ["ei", "e.i.", "eurl", "e.u.r.l.", "sarl", "s.a.r.l.", "sasu", "s.a.s.u.", "sas", "s.a.s.", 
-                       "sa", "s.a.", "snc", "s.n.c.", "scs", "s.c.s.", "sca", "s.c.a."]
-contextClientName = ["m.", "mme", "mm", "mrs", "monsieur", "madame", "client", "titulaire"]
+                       "sa", "s.a.", "sci", "s.c.i.", "snc", "s.n.c.", "scs", "s.c.s.", "sca", "s.c.a."]
+contextClientName = ["m.", "mme", "mm", "mrs", "monsieur", "madame", "client", "titulaire", "facturer à", "facturer a"]
 contextInvoiceAmount = ["ttc", "t.t.c.", "toutes taxes comprises"]
 contextInvoiceDate = ["date de facture", "date de la facture", "date de facturation", "date de la facturation"]
-contextDueDate = ["échéance", "payable jusqu'au", "à payer jusqu'à", "due", "prélevé"]
+contextDueDate = ["échéance", "echeance", "payable jusqu'au", "à payer jusqu'à", "a payer jusqu'a", "due", "prélevé", "preleve"]
 
 # Function to check if a given string appears with context in any of the ROI lines
-def isRelevant(text : str, context : list, ocrOutput : dict):
+def checkContextRelevance(text : str, context : list, ocrOutput : dict):
     for roiNum in ocrOutput:
         for lineNum in ocrOutput[roiNum]:
-            if text.lower() in ocrOutput[roiNum][lineNum] and any (term in ocrOutput[roiNum][lineNum] for term in context):
-                return True
-    return False
+            line = ocrOutput[roiNum][lineNum]
+            if text.lower() in line.lower() and any (term in line.lower() for term in context):
+                return True, roiNum, lineNum
+    return False, None, None
+
+# Function to
 
 # Function to extract the relevant invoice data from the OCR and NER output (with the help of context rules)
-def extractData(ocrOutput : dict, nerOutput : spacy.tokens.Doc):
+def extractData(ocrOutput : dict, nerOutput : spacy.tokens.Doc, roiNumSupplier : int):
     
     # Initialize the invoice data dictionary
     invoiceData = {
@@ -72,12 +75,22 @@ def extractData(ocrOutput : dict, nerOutput : spacy.tokens.Doc):
 
     # If available, extract supplier and client information from both the OCR and the NER output
     for ent in nerOutput.ents:
-        if (ent.label_ == "ORG" or isRelevant(text=ent.text, context=contextSupplierName, ocrOutput=ocrOutput)) and ent.text not in contextClientName:
-            if invoiceData["supplierName"] is None:
-                invoiceData["supplierName"] = ent.text
+        if ent.label_ == "ORG":
+            if invoiceData["supplierName"] is None and ent.text not in contextClientName:
+                relevantContext = checkContextRelevance(text=ent.text, context=contextSupplierName, ocrOutput=ocrOutput)
+                if relevantContext[0] == True:
+                    legalForm = [term for term in contextSupplierName if term in ocrOutput[relevantContext[1]][relevantContext[2]]][0].upper().replace('.', '')
+                    invoiceData["supplierName"] = ent.text + " " + legalForm
+                elif ent.text.lower() in ocrOutput[roiNumSupplier].values():
+                    invoiceData["supplierName"] = ent.text
+        elif (ent.label_ == "MISC"):
+            if invoiceData["supplierName"] is None and ent.text not in contextClientName:
+                relevantContext = checkContextRelevance(text=ent.text, context=contextSupplierName, ocrOutput=ocrOutput)
+                if relevantContext[0] == True:
+                    legalForm = [term for term in contextSupplierName if term in ocrOutput[relevantContext[1]][relevantContext[2]]][0].upper().replace('.', '')
+                    invoiceData["supplierName"] = ent.text + " " + legalForm
         elif ent.label_ == "PER":
-            if invoiceData["clientName"] is None and isRelevant(text=ent.text, context=contextClientName, ocrOutput=ocrOutput):
-                print(ent.text)
+            if invoiceData["clientName"] is None and checkContextRelevance(text=ent.text, context=contextClientName, ocrOutput=ocrOutput)[0]:
                 invoiceData["clientName"] = ent.text
     
     # Extract the remaining information from the OCR dictionary, using only the context rules
