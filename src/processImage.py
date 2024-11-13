@@ -1,8 +1,5 @@
-import os
 import cv2
-from matplotlib import pyplot as plt
 import numpy as np
-from PIL import Image
 
 
 # Funcion to resize an image to targetWidth and targetHeight while preserving the aspect ratio
