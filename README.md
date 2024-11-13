@@ -7,7 +7,7 @@ This is a smaller project to demonstrate how a combination of Python libraries c
 - `main.py`: High-level command which loops through the invoices and creates the final JSON file.
 - `pipeline.py`: A wrapper to order the various processing functions (for both image & text) as well as the OCR and NER commands; outputs the captured data from a single invoice.
 - `processText.py`: A collection of processing functions for textual data; contains the final logic which combines all the information.
-- `processImage.py`: A collection of processing functions for image data. <br/><br/>
+- `processImage.py`: A collection of processing functions for image data.
 
 ## Results
 ### I) Obtain ROIs from each invoice
