@@ -2,6 +2,7 @@ import re
 import spacy
 import spacy.tokens
 
+
 def standardize(text):
     # Replace any '|' character with a space
     text = re.sub(r'\|', ' ', text)
@@ -59,13 +60,11 @@ def checkContextRelevance(text : str, context : list, ocrOutput : dict):
                 return True, roiNum, lineNum
     return False, None, None
 
-# Function to
-
 # Function to extract the relevant invoice data from the OCR and NER output (with the help of context rules)
 def extractData(ocrOutput : dict, nerOutput : spacy.tokens.Doc, roiNumSupplier : int):
     
-    # Initialize the invoice data dictionary
-    invoiceData = {
+    # Initialize the dictionary for the captured data
+    capturedData = {
     "invoiceNumber": None,
     "supplierName": None,
     "clientName": None,
@@ -77,22 +76,22 @@ def extractData(ocrOutput : dict, nerOutput : spacy.tokens.Doc, roiNumSupplier :
     # If available, extract supplier and client information from both the OCR and the NER output
     for ent in nerOutput.ents:
         if ent.label_ == "ORG":
-            if invoiceData["supplierName"] is None and ent.text not in contextClientName:
+            if capturedData["supplierName"] is None and ent.text not in contextClientName:
                 relevantContext = checkContextRelevance(text=ent.text, context=contextSupplierName, ocrOutput=ocrOutput)
                 if relevantContext[0] == True:
                     legalForm = [term for term in contextSupplierName if term in ocrOutput[relevantContext[1]][relevantContext[2]]][0].upper().replace('.', '')
-                    invoiceData["supplierName"] = ent.text + " " + legalForm
+                    capturedData["supplierName"] = ent.text + " " + legalForm
                 elif ent.text.lower() in ocrOutput[roiNumSupplier].values():
-                    invoiceData["supplierName"] = ent.text
+                    capturedData["supplierName"] = ent.text
         elif (ent.label_ == "MISC"):
-            if invoiceData["supplierName"] is None and ent.text not in contextClientName:
+            if capturedData["supplierName"] is None and ent.text not in contextClientName:
                 relevantContext = checkContextRelevance(text=ent.text, context=contextSupplierName, ocrOutput=ocrOutput)
                 if relevantContext[0] == True:
                     legalForm = [term for term in contextSupplierName if term in ocrOutput[relevantContext[1]][relevantContext[2]]][0].upper().replace('.', '')
-                    invoiceData["supplierName"] = ent.text + " " + legalForm
+                    capturedData["supplierName"] = ent.text + " " + legalForm
         elif ent.label_ == "PER":
-            if invoiceData["clientName"] is None and checkContextRelevance(text=ent.text, context=contextClientName, ocrOutput=ocrOutput)[0]:
-                invoiceData["clientName"] = ent.text
+            if capturedData["clientName"] is None and checkContextRelevance(text=ent.text, context=contextClientName, ocrOutput=ocrOutput)[0]:
+                capturedData["clientName"] = ent.text
     
     # Extract the remaining information from the OCR dictionary, using only the context rules
     for roiNum in ocrOutput:
@@ -100,35 +99,35 @@ def extractData(ocrOutput : dict, nerOutput : spacy.tokens.Doc, roiNumSupplier :
             line = ocrOutput[roiNum][lineNum]
             
             # Extract invoice number
-            if invoiceData['invoiceNumber'] is None and any(term in line for term in contextInvoiceNumber):
+            if capturedData['invoiceNumber'] is None and any(term in line for term in contextInvoiceNumber):
                 match = re.search(r"\b(\d+)\b", line)
                 if match:
-                    invoiceData["invoiceNumber"] = match.group(1)
+                    capturedData["invoiceNumber"] = match.group(1)
 
             # Extract supplier name (if not found through NER)
-            if invoiceData['supplierName'] is None and any(term in line for term in contextSupplierName):
-                invoiceData["supplierName"] = line
+            if capturedData['supplierName'] is None and any(term in line for term in contextSupplierName):
+                capturedData["supplierName"] = line
 
             # Extract client name (if not found through NER)
-            if invoiceData['clientName'] is None and any(term in line for term in contextClientName):
-                invoiceData["clientName"] = ' '.join([word for word in line.split() if word not in contextClientName]).title()
+            if capturedData['clientName'] is None and any(term in line for term in contextClientName):
+                capturedData["clientName"] = ' '.join([word for word in line.split() if word not in contextClientName]).title()
             
             # Extract the invoice amount
-            if invoiceData["invoiceAmount"] is None and any(term in line for term in contextInvoiceAmount):
+            if capturedData["invoiceAmount"] is None and any(term in line for term in contextInvoiceAmount):
                 match = re.search(r"([\d,.]+)\s(eur)", line)
                 if match:
-                    invoiceData["invoiceAmount"] = f"{match.group(1)} {match.group(2).upper()}"
+                    capturedData["invoiceAmount"] = f"{match.group(1)} {match.group(2).upper()}"
 
             # Extract the invoice date
-            if invoiceData["invoiceDate"] is None and any(term in line for term in contextInvoiceDate):
+            if capturedData["invoiceDate"] is None and any(term in line for term in contextInvoiceDate):
                 match = re.search(r"\b(\d{4}-\d{2}-\d{2})\b", line)
                 if match:
-                    invoiceData["invoiceDate"] = match.group(1)
+                    capturedData["invoiceDate"] = match.group(1)
             
             # Extract the due date
-            if invoiceData["dueDate"] is None and any(term in line for term in contextDueDate):
+            if capturedData["dueDate"] is None and any(term in line for term in contextDueDate):
                 match = re.search(r"\b(\d{4}-\d{2}-\d{2})\b", line)
                 if match:
-                    invoiceData["dueDate"] = match.group(1)
+                    capturedData["dueDate"] = match.group(1)
 
-    return invoiceData
+    return capturedData
