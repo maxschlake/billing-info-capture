@@ -1,13 +1,13 @@
 # Billing Info Capture - Applying optical character recognition (OCR) and named entity recgnition (NER) to French invoices <br/> (Python / OpenCV / PyTesseract / spaCy) 
 
 ## Overview
-This is a smaller project to demonstrate how a combination of Python libraries can be utilized to read key information from French invoices. The invoices are not assumed to follow a certain template; rather the aim is for the program to adjust automatically to different formats, distortions, rotations, etc. I am first using the *OpenCV* library to preprocess each invoice image and obtain the regions of interest (**ROIs**). Afterwards, *PyTesseract* reads the content of each ROI and a French NER model from *spaCy* identifies relevant entities in the text. The entities are combined with a custom-built logic which , e.g., checks for certain keywords or finds the ROI with the maximum average character height. As a final result, we obtain the output data from two example invoices stored in the JSON format. <br/><br/>
+This is a smaller project to demonstrate how a combination of Python libraries can be utilized to read key information from French invoices. The invoices are not assumed to follow a certain template; rather the aim is for the program to adjust automatically to different formats, distortions, rotations, etc. I am first using the *OpenCV* library to preprocess each invoice image and obtain the regions of interest (**ROIs**). Afterwards, *PyTesseract* reads the content of each ROI and a French NER model from *spaCy* identifies relevant entities in the text. The entities are combined with a custom-built logic which, e.g., checks for certain keywords or finds the ROI with the maximum average character height. As a final result, we obtain the output data from two example invoices stored in the JSON format.
 
 ## Structure
 - `main.py`: High-level command which loops through the invoices and creates the final JSON file.
 - `pipeline.py`: A wrapper to order the various processing functions (for both image & text) as well as the OCR and NER commands; outputs the captured data from a single invoice.
 - `processText.py`: A collection of processing functions for textual data; contains the final logic which combines all the information.
-- `processImage.py`: A collection of processing functions for image data.
+- `processImage.py`: A collection of processing functions for image data. <br/><br/>
 
 ## Results
 ### I) Obtain ROIs from each invoice
@@ -82,4 +82,13 @@ The output is written to the `invoiceData.json` file in the root folder:
 ```
 
 ## Dependencies
-
+- *Python*: Version 3.10.6
+- *OpenCV*: Version 4.10.0
+- *PyTesseract*: Version 0.3.13
+- *spaCy*: Version 3.8.2
+<br/><br/>
+**Note**: In order to use the NER model *fr_core_news_lg* from *spaCy*, you need to run <br/><br/>
+`python -m spacy download fr` <br/><br/>
+followed by the following commands in Python <br/><br/>
+`import spacy` <br/>
+`spacy.load('fr_core_news_lg')`.
