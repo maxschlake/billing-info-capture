@@ -19,45 +19,41 @@ In this project, I wrote a program with the aim of enhancing the quality of imag
     <!-- Column 1 -->
     <td align="center">
       <strong>1) Given invoice</strong><br>
-      <img src="images/raw/facture1.JPG" alt="Image 1" width="200">
+      <img src="images/raw/facture1.JPG" alt="Image 1" width="240">
     </td>
     <!-- Column 2 -->
     <td align="center">
       <strong>2) Deskewed</strong><br>
-      <img src="images/mod/facture1_desk.jpg" alt="Image 2" width="200">
+      <img src="images/mod/facture1_desk.jpg" alt="Image 2" width="240">
     </td>
     <!-- Column 3 -->
     <td align="center">
       <strong>3) Modified</strong><br>
-      <img src="images/mod/facture1_mod.jpg" alt="Image 3" width="200">
+      <img src="images/mod/facture1_mod.jpg" alt="Image 3" width="240">
     </td>
     <!-- Column 4 -->
     <td align="center">
       <strong>4) With ROI rectangles</strong><br>
-      <img src="images/mod/facture1_rect.jpg" alt="Image 4" width="200">
+      <img src="images/mod/facture1_rect.jpg" alt="Image 4" width="240">
     </td>
   </tr>
    <!-- Row 2: facture2.jpg images -->
   <tr>
     <!-- Column 1 -->
     <td align="center">
-      <strong>1) Given invoice</strong><br>
-      <img src="images/raw/facture2.JPG" alt="Image 1" width="200">
+      <img src="images/raw/facture2.JPG" alt="Image 1" width="240">
     </td>
     <!-- Column 2 -->
     <td align="center">
-      <strong>2) Deskewed</strong><br>
-      <img src="images/mod/facture2_desk.jpg" alt="Image 2" width="200">
+      <img src="images/mod/facture2_desk.jpg" alt="Image 2" width="240">
     </td>
     <!-- Column 3 -->
     <td align="center">
-      <strong>3) Modified</strong><br>
-      <img src="images/mod/facture2_mod.jpg" alt="Image 3" width="200">
+      <img src="images/mod/facture2_mod.jpg" alt="Image 3" width="240">
     </td>
     <!-- Column 4 -->
     <td align="center">
-      <strong>4) With ROI rectangles</strong><br>
-      <img src="images/mod/facture2_rect.jpg" alt="Image 4" width="200">
+      <img src="images/mod/facture2_rect.jpg" alt="Image 4" width="240">
     </td>
   </tr>
 </table>
