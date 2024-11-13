@@ -14,7 +14,7 @@ def standardize(text):
     text = re.sub(r'(\d{4})[-/\.](\d{2})[-/\.](\d{2})', r'\1-\2-\3', text) # DD/MM/YYYY or DD.MM.YYYY
 
     # Remove unwanted characters
-    text = re.sub(r'[^\w\s€£¥$-@,.%-]', '', text)
+    text = re.sub(r'[^\w\s€£¥$-@#,.%-]', '', text)
 
     # Show monetary values in a standard format: XX.XX CUR
     # XX.XX EUR
@@ -41,9 +41,10 @@ def standardize(text):
     return text
 
 # Context lists
-contextInvoiceNumber = ["facture", "facturation", "numéro de facture", "numero de facture"]
-contextSupplierName = ["ei", "e.i.", "eurl", "e.u.r.l.", "sarl", "s.a.r.l.", "sasu", "s.a.s.u.", "sas", "s.a.s.", 
-                       "sa", "s.a.", "sci", "s.c.i.", "snc", "s.n.c.", "scs", "s.c.s.", "sca", "s.c.a."]
+contextInvoiceNumber = ["facture#", "facturation#", "#facture", "#facturation", "facture #", "facturation #",
+                        "# facture", "# facturation", "numéro de facture", "numero de facture"]
+contextSupplierName = ["e.i.", "eurl", "e.u.r.l.", "sarl", "s.a.r.l.", "sasu", "s.a.s.u.", "sas", "s.a.s.", 
+                       "s.a.", "sci", "s.c.i.", "snc", "s.n.c.", "scs", "s.c.s.", "sca", "s.c.a."] # excluded: "ei", "sa"
 contextClientName = ["m.", "mme", "mm", "mrs", "monsieur", "madame", "client", "titulaire", "facturer à", "facturer a"]
 contextInvoiceAmount = ["ttc", "t.t.c.", "toutes taxes comprises"]
 contextInvoiceDate = ["date de facture", "date de la facture", "date de facturation", "date de la facturation"]

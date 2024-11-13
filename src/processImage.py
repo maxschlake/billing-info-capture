@@ -106,7 +106,7 @@ def getSkewAngle(image, verbose: bool=False) -> float:
     # cv2.waitKey(0)
 
     # Find all contours
-    contours, hierarchy = cv2.findContours(image=dilate, mode=cv2.RETR_LIST, method=cv2.CHAIN_APPROX_SIMPLE)
+    contours = cv2.findContours(image=dilate, mode=cv2.RETR_LIST, method=cv2.CHAIN_APPROX_SIMPLE)[0]
     contours = sorted(contours, key=cv2.contourArea, reverse=True)
     newImage = cv2.drawContours(image=newImage, contours=contours[-1], contourIdx=-1, color=(0, 255, 0))
     # for c in contours:
@@ -185,14 +185,16 @@ def identifyStructure(image, imageDeskewed, kernelSizeBlur : int, stddevBlur : f
     if landscape:
         kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (75, 30))
     else:
-        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (55, 40))
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (65, 20)) #65/45
     dilate = cv2.dilate(src=thresh, kernel=kernel, iterations=1)
+    # cv2.imshow("dilate", dilate)  # Display the image with the contour
+    # cv2.waitKey(0)  # Wait for a key press to close the window
     contours = cv2.findContours(image=dilate, mode=cv2.RETR_EXTERNAL, method=cv2.CHAIN_APPROX_SIMPLE)
     contours = contours[0] if len(contours) == 2 else contours[1]
     contours = sorted(contours, key=lambda x: (cv2.boundingRect(x)[1], cv2.boundingRect(x)[0]))
     for c in contours:
         x, y, w, h = cv2.boundingRect(c)
-        if h > 5 and w > 5: # 10/10
+        if h > 10 and w > 10:
             roi = image[y:y+h, x:x+w]
             roiList.append(roi)
             cv2.rectangle(image, (x, y), (x + w, y + h), (36, 255, 12), 2)
