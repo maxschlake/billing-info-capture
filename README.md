@@ -4,10 +4,10 @@
 This is a smaller project to demonstrate how a combination of Python libraries can be utilized to read key information from French invoices. The invoices are not assumed to follow a certain template; rather the aim is for the program to adjust automatically to different formats, distortions, rotations, etc. I am first using the *OpenCV* library to preprocess each invoice image and obtain the regions of interest (**ROIs**). Afterwards, *PyTesseract* reads the content of each ROI and a French NER model from *spaCy* identifies relevant entities in the text. The entities are combined with a custom-built logic which, e.g., checks for certain keywords or finds the ROI with the maximum average character height. As a final result, we obtain the output data from two example invoices stored in the JSON format.
 
 ## Structure
-- `main.py`: High-level command which loops through the invoices and creates the final JSON file.
-- `pipeline.py`: A wrapper to order the various processing functions (for both image & text) as well as the OCR and NER commands; outputs the captured data from a single invoice.
-- `processText.py`: A collection of processing functions for textual data; contains the final logic which combines all the information.
-- `processImage.py`: A collection of processing functions for image data.
+- `src/main.py`: High-level command which loops through the invoices and creates the final JSON file.
+- `src/pipeline.py`: A wrapper to order the various processing functions (for both image & text) as well as the OCR and NER commands; outputs the captured data from a single invoice.
+- `src/processText.py`: A collection of processing functions for textual data; contains the final logic which combines all the information.
+- `src/processImage.py`: A collection of processing functions for image data.
 
 ## Results
 ### I) Obtain ROIs from each invoice
