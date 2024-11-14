@@ -1,4 +1,4 @@
-# Billing Info Capture - Applying optical character recognition (OCR) and named entity recgnition (NER) to French invoices (Python / OpenCV / PyTesseract / spaCy) 
+# Billing Info Capture - Applying optical character recognition (OCR) and named entity recognition (NER) to French invoices (Python / OpenCV / PyTesseract / spaCy) 
 
 ## Overview
 This is a smaller project to demonstrate how a combination of *Python* libraries can be utilized to read key information from French invoices. The invoices are not assumed to follow a certain template; rather the aim is for the program to adjust automatically to different formats, distortions, rotations, etc. <br/>
