@@ -38,6 +38,22 @@ def standardize(text):
     text = re.sub(r'¥\s?(\d+(?:\.\d+)?)', r'\1 RMB', text)   # ¥ XX.XX or ¥XX.XX
     text = re.sub(r'\bRMB\s?(\d+(?:\.\d+)?)\b', r'\1 RMB', text)   # RMBXX.XX, RMB XX.XX
     text = re.sub(r'\b(\d+(?:\.\d+)?)\s?RMB\b', r'\1 RMB', text)   # XX.XXRMB
+
+    # Convert to a format without thousands separators but with decimal points (and '00' if there are no decimals)
+    text = re.sub(
+        # Set up three capturing groups (automatically indexed by 1):
+            # Group 1: (\d{1,3}(?:\.\d{3})*|\d+) -> Integer part of the number which may contain thousands separators
+            # Group 2: (\.\d+)? -> Optional decimals
+            # Group 3: (EUR|USD|GBP|RMB) -> Currency
+        r'(\d{1,3}(?:\.\d{3})*|\d+)(\.\d+)?\s?(EUR|USD|GBP|RMB)',
+        lambda m: (
+            # If no decimal part or three digits after the last dot -> add '.00'
+            f"{m.group(1).replace('.', '')}.00 {m.group(3)}" if not m.group(2) or len(m.group(2)) == 4 else
+            # If one digit after the decimal -> replace the decimal separator by '.' and add '0'
+            f"{m.group(1).replace('.', '')}.{m.group(2)[1]}0 {m.group(3)}" if len(m.group(2)) == 2 else
+            # If two digits after the decimal -> replace the decimal separator by '.' and add nothing
+            f"{m.group(1).replace('.', '')}.{m.group(2)[1:]} {m.group(3)}"
+        ), text)
     
     return text
 
