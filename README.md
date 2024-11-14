@@ -67,14 +67,14 @@ The output is written to the `invoiceData.json` file in the root folder:
         "supplierName": "EG Alp",
         "clientName": "Chlo\u00e9 Dubois",
         "invoiceAmount": "620.20 EUR",
-        "invoiceDate": "2024-12-11",
+        "invoiceDate": "2024-11-11",
         "dueDate": "2024-12-01"
     },
     {
         "invoiceNumber": "78745",
         "supplierName": "Immo-Expert SCI",
         "clientName": "Jean Dumas",
-        "invoiceAmount": "21.696 EUR",
+        "invoiceAmount": "21696.00 EUR",
         "invoiceDate": "2024-11-13",
         "dueDate": "2024-12-13"
     }
