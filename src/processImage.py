@@ -114,7 +114,7 @@ def addBorders(image, borderWidth : int, maxVal : int=255):
     image = cv2.copyMakeBorder(src=image, top=top, bottom=bottom, left=left, right=right, borderType=cv2.BORDER_CONSTANT, value=color)
     return image
 
-# Function to identify regiions of interest (roi) in an image and create a sorted list thereof
+# Function to identify regions of interest (ROI) in an image and create a sorted list thereof
 def identifyStructure(image, imageDeskewed, kernelSizeBlur : int, stddevBlur : float, landscape : bool=False):
     roiList = []
     if len(imageDeskewed.shape) == 3:
